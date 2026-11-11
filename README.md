@@ -11,10 +11,16 @@ Tudo é gerado por código: desenhos, voz, música e efeitos. Não usa banco de 
 | Arquivo | Ideia | Duração |
 |---|---|---|
 | `naruto_presidente.mp4` | E se o Naruto fosse presidente do Brasil? | ~2 min |
-| `ilha_canibais.mp4` | E se você fosse parar numa ilha de c*nib*is? (palavra sempre censurada: bip no áudio + tarja na tela) | ~2 min |
+| `ilha_canibais.mp4` | E se você fosse parar numa ilha de c*nib*is? (palavra sempre censurada: tarja preta na tela e marcação [BIP] no roteiro) | ~2 min |
 | `ia_dominou.mp4` | E se a IA dominasse o mundo? (final "biscoito ou bolacha") | ~2 min |
 
+Os vídeos saem **sem narração** (só trilha + efeitos), prontos para receber as vozes gravadas.
+O ritmo das cenas, as legendas e o movimento da boca seguem uma voz-guia interna, e o `*_roteiro.txt` traz
+o texto de cada cena com o tempo exato em que ela deve ser falada.
+Nas falas com `[BIP: ...]`, coloque o bip por cima da palavra.
+
 Cada vídeo vem com:
+- `*_roteiro.txt`: transcrição do roteiro com os tempos de cada fala
 - `*_capa.jpg`: imagem de capa
 - `*.srt`: legenda separada (útil para editar no CapCut)
 - `*_legenda_post.txt`: sugestão de texto e hashtags para a postagem
@@ -39,6 +45,7 @@ tar xzf voice-pt-br-edresson-low.tar.gz && cd ..
 python3 gerar.py                         # gera os 3 vídeos
 python3 gerar.py ia_dominou              # só um
 python3 gerar.py --previa ilha_canibais  # folha de contato rápida para revisar o enquadramento
+python3 gerar.py --com-voz               # inclui a narração sintética no áudio
 ```
 
 Precisa de `ffmpeg` instalado.
@@ -52,9 +59,9 @@ Para um vídeo novo, copie um arquivo de `roteiros/` e edite a lista `CENAS`. Ca
 - `sfx=["boom", ("whoosh", 1.2)]`: efeitos sonoros (com atraso opcional em segundos).
 - `destaque=[...]`: palavras que aparecem em amarelo na legenda.
 
-### Dica para ficar ainda melhor
-A voz offline (Piper) é robótica. Para mais naturalidade, importe o vídeo no CapCut, use o `.srt` como roteiro e
-troque a narração por uma voz de IA do próprio CapCut ou pela sua voz. As animações já estão sincronizadas por cena.
+### Colocando as vozes
+Importe o vídeo no CapCut (ou outro editor) e grave/importe cada fala no tempo indicado no `*_roteiro.txt`.
+Se preferir, mande os áudios e o gerador pode ser ajustado para usar as vozes direto e recalcular os tempos.
 
 ## Estrutura
 

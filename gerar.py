@@ -5,6 +5,7 @@ Uso:
     python3 gerar.py                      # gera todos
     python3 gerar.py naruto_presidente    # gera só um
     python3 gerar.py --previa ilha_canibais   # folha de contato rápida (sem áudio)
+    python3 gerar.py --com-voz            # inclui a narração sintética (por padrão sai só trilha + efeitos)
 """
 import importlib
 import os
@@ -31,7 +32,7 @@ def main():
         t0 = time.time()
         print(f"\n=== {r.TITULO} ===")
         out = gerar(r.CENAS, os.path.join(SAIDA, f"{r.ARQUIVO}.mp4"), humor=r.HUMOR, bpm=r.BPM,
-                    workers=os.cpu_count() or 4)
+                    workers=os.cpu_count() or 4, narracao="--com-voz" in args)
         with open(os.path.join(SAIDA, f"{r.ARQUIVO}_legenda_post.txt"), "w", encoding="utf-8") as f:
             f.write(r.LEGENDA_POST + "\n")
         print(f"({time.time() - t0:.0f}s) -> {out}")

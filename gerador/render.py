@@ -278,7 +278,7 @@ def render_quadro(cena, t, dur, env, legenda, T):
 # ======================================================================= pipeline
 def _ffmpeg_writer(path):
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
-           "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-preset", "medium", "-crf", "19", "-pix_fmt", "yuv420p",
+           "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-preset", "medium", "-crf", "21", "-pix_fmt", "yuv420p",
            path]
     return subprocess.Popen(cmd, stdin=subprocess.PIPE)
 
@@ -306,7 +306,9 @@ def _worker(args):
     return path
 
 
-def gerar(cenas, saida, humor="misterio", bpm=96, workers=4, capa_t=0.6, velocidade=0.9):
+def gerar(cenas, saida, humor="misterio", bpm=96, workers=4, capa_t=0.6, velocidade=0.9, narracao=False):
+    """narracao=False: a voz sintética só serve de guia de ritmo (legenda, boca, duração das cenas);
+    o MP4 sai só com trilha + efeitos, pronto para receber as vozes gravadas."""
     tmp = tempfile.mkdtemp(prefix="video_")
     print(f"[1/4] Narrando {len(cenas)} cenas...")
     vozes, starts, durs, legendas = [], [], [], []
@@ -370,7 +372,11 @@ def gerar(cenas, saida, humor="misterio", bpm=96, workers=4, capa_t=0.6, velocid
 
     print("[4/4] Mixando áudio e montando o MP4...")
     os.makedirs(os.path.dirname(os.path.abspath(saida)), exist_ok=True)
-    filtro = (
+    if not narracao:
+        filtro = ("[2:a]volume=0.5[m];[3:a]volume=0.9[s];"
+                  "[m][s]amix=inputs=2:normalize=0,loudnorm=I=-18:TP=-2:LRA=11,aformat=channel_layouts=stereo[a]")
+    else:
+        filtro = (
         "[1:a]highpass=f=90,equalizer=f=2800:t=q:w=1.2:g=4,equalizer=f=200:t=q:w=1:g=2,"
         "acompressor=threshold=-20dB:ratio=3:attack=5:release=80:makeup=2,asplit=2[v][vk];"
         "[2:a]volume=0.55[m];[m][vk]sidechaincompress=threshold=0.04:ratio=8:attack=15:release=350[md];"
@@ -388,6 +394,7 @@ def gerar(cenas, saida, humor="misterio", bpm=96, workers=4, capa_t=0.6, velocid
                    check=True)
     srt = os.path.splitext(saida)[0] + ".srt"
     _salvar_srt(legendas, srt)
+    _salvar_roteiro(cenas, starts, durs, os.path.splitext(saida)[0] + "_roteiro.txt")
     shutil.rmtree(tmp, ignore_errors=True)
     print(f"Pronto: {saida}")
     return saida
@@ -430,3 +437,20 @@ def previa(cenas, path, t_rel=0.7, dur=4.0, cols=5):
     for i, im in enumerate(thumbs):
         sheet.paste(im, ((i % cols) * 270, (i // cols) * 480))
     sheet.save(path)
+
+
+def _mmss(t):
+    return f"{int(t // 60):02d}:{t % 60:04.1f}"
+
+
+def transcricao(cenas, starts, durs):
+    linhas = []
+    for i, (c, a, d) in enumerate(zip(cenas, starts, durs), 1):
+        txt = re.sub(r"\[\[(.*?)\]\]", r"[BIP: \1]", c["fala"])
+        linhas.append(f"{i:02d}. [{_mmss(a)} - {_mmss(a + d)}] {txt}")
+    return "\n".join(linhas)
+
+
+def _salvar_roteiro(cenas, starts, durs, path):
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(transcricao(cenas, starts, durs) + "\n")
