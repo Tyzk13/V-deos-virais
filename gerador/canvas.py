@@ -114,6 +114,40 @@ class Canvas:
             c = mix(c_top, c_bot, i / max(1, h - 1))
             self.d.line([(x0 * k, y0 * k + i), (x1 * k, y0 * k + i)], fill=c)
 
+    # ---------- camadas (sombras, luzes, transparência) ----------
+    def layer(self):
+        """Nova camada transparente do mesmo tamanho (desenhar com fill (0,0,0,0) apaga)."""
+        return Canvas(self.w, self.h, bg=(0, 0, 0, 0), k=self.k)
+
+    def merge(self, lay, opacity=1.0, blur=0):
+        from PIL import ImageFilter
+        im = lay.img
+        if blur:
+            im = im.filter(ImageFilter.GaussianBlur(blur * self.k))
+        if opacity < 1.0:
+            a = im.getchannel("A").point(lambda v: int(v * opacity))
+            im = im.copy()
+            im.putalpha(a)
+        if self.img.mode != "RGBA":
+            base = self.img.convert("RGBA")
+            base.alpha_composite(im)
+            self.img = base.convert(self.img.mode)
+        else:
+            self.img.alpha_composite(im)
+        self.d = ImageDraw.Draw(self.img)
+
+    def glow(self, cx, cy, r, color, opacity=0.5, ry=None):
+        """Brilho suave (luz de lâmpada, sol, tocha)."""
+        lay = self.layer()
+        lay.ellipse(cx, cy, r, ry or r, fill=tuple(color[:3]) + (255,), w=0)
+        self.merge(lay, opacity, blur=r * 0.45)
+
+    def shade(self, draw_fn, opacity=0.3, blur=0):
+        """Desenha algo numa camada e mistura com opacidade (sombras/realces)."""
+        lay = self.layer()
+        draw_fn(lay)
+        self.merge(lay, opacity, blur)
+
     # ---------- saída ----------
     def final(self, scale=1.0):
         w = max(1, int(self.w * scale))

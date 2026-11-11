@@ -39,6 +39,8 @@ def _celular(c, w, h, a):
         _texto_censurado(c, w / 2, h / 2 - (len(txt.split("\n")) - 1) * size * 0.6 + i * size * 1.2, line, size,
                          a.get("cor_texto", (255, 255, 255)))
     c.circle(w / 2, 30, 7, fill=(70, 70, 80), w=0)
+    c.shade(lambda l: l.poly([(40, 60), (w * 0.55, 60), (40, h * 0.55)], fill=(255, 255, 255), w=0), 0.1)
+    c.rect(w - 14, 140, w - 4, 220, fill=(50, 50, 55), w=3, r=3)
 
 
 PROPS = {}
@@ -66,7 +68,9 @@ def p_tv(c, a, t):
     for i, line in enumerate(lines):
         _texto_censurado(c, 450, 275 - (len(lines) - 1) * size * 0.6 + i * size * 1.2, line, size,
                          a.get("cor_texto", (255, 255, 255)))
+    c.shade(lambda l: l.poly([(40, 40), (420, 40), (40, 330)], fill=(255, 255, 255), w=0), 0.1)
     c.rect(400, 540, 500, 590, fill=(40, 40, 45), w=5)
+    c.circle(840, 520, 7, fill=(80, 230, 120), w=0)
 
 
 @prop("placa", 620, 760)
@@ -90,6 +94,7 @@ def p_caldeirao(c, a, t):
         c.poly([(x - 50, 540), (x, 540 - hh), (x + 50, 540)], fill=(250, 120, 30), w=5)
         c.poly([(x - 25, 540), (x, 540 - hh * 0.55), (x + 25, 540)], fill=(255, 220, 80), w=0)
     c.chord(310, 200, 270, 300, 0, 180, fill=(50, 50, 55), w=9)
+    c.shade(lambda l: l.chord(250, 200, 180, 260, 90, 180, fill=(255, 255, 255), w=0), 0.15)
     c.ellipse(310, 205, 275, 60, fill=(70, 70, 75), w=9)
     c.ellipse(310, 205, 235, 42, fill=(120, 200, 120), w=6)
     for i in range(6):
@@ -204,7 +209,10 @@ def p_laptop(c, a, t):
     txt = a.get("texto", "")
     for i, line in enumerate(txt.split("\n")):
         _texto_censurado(c, 260, 120 + i * 60, line, a.get("tam", 44), a.get("cor_texto", (40, 40, 60)))
+    c.shade(lambda l: l.poly([(80, 30), (260, 30), (80, 200)], fill=(255, 255, 255), w=0), 0.12)
     c.poly([(20, 360), (500, 360), (460, 300), (60, 300)], fill=(150, 155, 170), w=7)
+    for i in range(4):
+        c.line([(90 + i * 8, 315 + i * 10), (430 - i * 8, 315 + i * 10)], fill=(120, 125, 140), w=3)
 
 
 @prop("loading", 860, 300)

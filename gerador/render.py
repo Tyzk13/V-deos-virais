@@ -210,7 +210,11 @@ def _pos(el, t, dur):
 
 def render_quadro(cena, t, dur, env, legenda, T):
     cx, cy, z, ox, oy = _cam(cena, t, dur)
-    bg = _fundo_borrado(cena["fundo"], cena["desfoque"])
+    desf = cena["desfoque"]
+    if desf == 0 and cena["cam"] and isinstance(cena["cam"][0], (tuple, list)) and cena["cam"][0][2] >= 1.25 \
+            and any(e["tipo"] == "ator" for e in cena["elenco"]):
+        desf = 2.5   # profundidade de campo nos closes
+    bg = _fundo_borrado(cena["fundo"], desf)
     a = 1 / z
     frame = bg.transform((W, H), Image.AFFINE, (a, 0, cx - W / 2 * a - ox * a, 0, a, cy - H / 2 * a - oy * a),
                          Image.BILINEAR)

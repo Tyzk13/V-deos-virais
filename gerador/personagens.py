@@ -42,6 +42,7 @@ def _spiky(c, color, n=7, tip=1.38, fringe=True, start=192, end=348):
             y = HY - 22
         fr.append((x, y + (14 if fringe and j % 2 == 0 else 0)))
     c.poly(pts + fr, fill=color)
+    return pts + fr
 
 
 def _cap_hair(c, color):
@@ -55,6 +56,7 @@ def _cap_hair(c, color):
         y = HY - 42 - 18 * math.sin(math.pi * t)
         pts.append((x, y))
     c.poly(pts, fill=color)
+    return pts
 
 
 def _curly(c, color):
@@ -67,6 +69,52 @@ def _curly(c, color):
 
 def _long_back(c, color):
     c.rect(HX - HR * 1.12, HY - 40, HX + HR * 1.12, HY + HR * 1.45, fill=color, r=60)
+
+
+def _hair_detail(c, pts, color):
+    """Sombra embaixo do cabelo + mechas de brilho + contorno refeito."""
+    if not pts:
+        return
+
+    def sombra(l):
+        l.poly(pts, fill=darker(color, 0.6), w=0)
+        l.poly([(x, y - 18) for x, y in pts], fill=(0, 0, 0, 0), w=0)
+    c.shade(sombra, 0.75)
+    hl = lighter(color, 0.45)
+
+    def brilho(l):
+        l.arc(HX - 10, HY - 40, 82, 62, 205, 245, fill=hl, w=9)
+        l.arc(HX - 10, HY - 40, 66, 50, 210, 240, fill=hl, w=6)
+        l.arc(HX + 20, HY - 50, 70, 50, 280, 300, fill=hl, w=7)
+    c.shade(brilho, 0.6)
+    c.poly(pts, fill=None)
+
+
+def _head(c, skin, orelhas=True):
+    if orelhas:
+        for sx in (-1, 1):
+            c.ellipse(HX + sx * (HR - 4), HY + 22, 24, 30, fill=skin)
+            c.arc(HX + sx * (HR - 2), HY + 22, 10, 14, 90 + sx * 90 - 60, 90 + sx * 90 + 60, fill=darker(skin, 0.7), w=4)
+    c.circle(HX, HY, HR, fill=skin)
+
+    def sombra(l):
+        l.circle(HX, HY, HR - 4, fill=darker(skin, 0.78), w=0)
+        l.circle(HX - 26, HY - 32, HR + 6, fill=(0, 0, 0, 0), w=0)
+    c.shade(sombra, 0.85)
+    c.shade(lambda l: l.ellipse(HX - 50, HY - 64, 36, 20, fill=(255, 255, 255), w=0), 0.35, blur=5)
+
+
+def _ground_shadow(c):
+    c.shade(lambda l: l.ellipse(FX, FY - 4, 150, 24, fill=(0, 0, 0), w=0), 0.3, blur=7)
+
+
+def _body_shade(c):
+    def sombra(l):
+        l.rect(HX - 92, 355, HX + 92, 585, fill=(0, 0, 0), w=0, r=58)
+        l.rect(HX - 126, 340, HX + 58, 600, fill=(0, 0, 0, 0), w=0, r=58)
+    c.shade(sombra, 0.2)
+    c.shade(lambda l: l.ellipse(HX, 362, 70, 20, fill=(0, 0, 0), w=0), 0.22, blur=5)
+    c.rect(HX - 92, 355, HX + 92, 585, fill=None, r=58)
 
 
 # ---------------------------------------------------------------- rosto
@@ -103,8 +151,9 @@ def _eyes(c, expr, blink, dx=0):
             c.line([(x - 18, ey - 6), (x + 18, ey - 6)], w=6)
     else:
         for x in ex:
-            c.ellipse(x, ey, 10, 14, fill=OUT, w=0)
-            c.circle(x + 3, ey - 5, 3.5, fill=(255, 255, 255), w=0)
+            c.ellipse(x, ey, 11, 15, fill=OUT, w=0)
+            c.circle(x + 3, ey - 6, 4, fill=(255, 255, 255), w=0)
+            c.circle(x - 4, ey + 6, 2, fill=(255, 255, 255), w=0)
 
     # sobrancelhas
     by = ey - 38
@@ -175,9 +224,12 @@ def _face_extras(c, expr):
             else:
                 c.poly([(x - 10, HY + 22), (x + 10, HY + 22), (x + 14 * sx + 6, HY + 110), (x + 14 * sx - 12, HY + 110)],
                        fill=(120, 200, 255), w=3)
-    if expr in ("apaixonado", "feliz", "sorriso", "risada", "chorando_feliz"):
+    forte = expr in ("apaixonado", "feliz", "sorriso", "risada", "chorando_feliz")
+
+    def blush(l):
         for sx in (-1, 1):
-            c.ellipse(HX + sx * 72, HY + 40, 18, 10, fill=(240, 140, 140), w=0)
+            l.ellipse(HX + sx * 72, HY + 42, 22, 12, fill=(240, 110, 120), w=0)
+    c.shade(blush, 0.6 if forte else 0.28, blur=3)
     if expr == "raiva":
         x, y = HX + 70, HY - 80
         for a in (0, 90, 180, 270):
@@ -303,7 +355,16 @@ def _legs(c, s):
             c.line([(x, 560), (x, 666)], fill=calca, w=26, round_caps=False)
         else:
             c.line([(x, 590), (x, 668)], fill=OUT, w=14)
-        c.ellipse(x + sx * 10, 680, 34, 17, fill=(245, 245, 245) if not s["robo"] else (120, 130, 145), w=6)
+        if calca:
+            c.line([(x - sx * 9, 572), (x - sx * 9, 660)], fill=darker(calca, 0.72), w=6, round_caps=False)
+        if s["robo"]:
+            c.ellipse(x + sx * 10, 680, 36, 18, fill=(120, 130, 145), w=6)
+            continue
+        tenis = s.get("cor_tenis", (60, 65, 85))
+        c.ellipse(x + sx * 12, 678, 38, 19, fill=tenis, w=6)
+        c.chord(x + sx * 12, 680, 38, 17, 0, 180, fill=(250, 250, 250), w=5)
+        c.line([(x + sx * 12 - 12, 668), (x + sx * 12 + 4, 664)], fill=(250, 250, 250), w=4)
+        c.line([(x + sx * 12 - 8, 676), (x + sx * 12 + 8, 672)], fill=(250, 250, 250), w=4)
 
 
 # ---------------------------------------------------------------- acessórios
@@ -421,6 +482,12 @@ def _robot(c, s, expr, blink, talk, pose):
     c.line([(HX, HY - 108), (HX, HY - 160)], w=8)
     c.circle(HX, HY - 170, 16, fill=(255, 70, 70), w=6)
     c.rect(HX - 125, HY - 110, HX + 125, HY + 105, fill=metal, r=46)
+    c.shade(lambda l: (l.rect(HX - 121, HY - 106, HX + 121, HY + 101, fill=(40, 50, 70), w=0, r=44),
+                       l.rect(HX - 150, HY - 135, HX + 90, HY + 70, fill=(0, 0, 0, 0), w=0, r=44)), 0.35)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            c.circle(HX + sx * 104, HY + sy * 88, 6, fill=(130, 140, 155), w=3)
+    c.shade(lambda l: l.line([(HX - 100, HY - 80), (HX - 40, HY - 98)], fill=(255, 255, 255), w=10), 0.6)
     c.rect(HX - 98, HY - 60, HX + 98, HY + 40, fill=(25, 30, 45), r=26, w=6)
     for sx in (-1, 1):
         c.rect(HX + sx * 125 - (8 if sx > 0 else 18), HY - 30, HX + sx * 125 + (18 if sx > 0 else 8), HY + 30,
@@ -461,25 +528,33 @@ def sprite(spec, expr="neutro", blink=False, talk=False, pose="parado", scale=1.
     s = dict(spec)
     c = Canvas(SW, SH)
     if s["robo"]:
+        _ground_shadow(c)
         _robot(c, s, expr, blink, talk, pose)
         return c.final(scale)
     skin = SKIN.get(s["pele"], s["pele"]) if isinstance(s["pele"], str) else s["pele"]
     sleeve = s["cor_roupa"] if s["roupa"] not in ("tribal",) else skin
+    _ground_shadow(c)
     _acc_back(c, s)
     if s["cabelo"] == "longo":
         _long_back(c, s["cor_cabelo"])
     _arms(c, pose, sleeve, skin, "back")
     _legs(c, s)
     _torso(c, s, skin)
+    if s["roupa"] != "tribal":
+        _body_shade(c)
     _acc_body(c, s)
     _arms(c, pose, sleeve, skin, "front")
     # pescoço
-    c.rect(HX - 22, HY + 100, HX + 22, HY + 130, fill=skin, w=6)
+    c.rect(HX - 22, HY + 100, HX + 22, HY + 130, fill=darker(skin, 0.82), w=6)
     # cabeça
     if "mascara" in s["acessorios"]:
-        c.circle(HX, HY, HR, fill=skin)
+        _head(c, skin, orelhas=False)
         wood = (150, 95, 50)
         c.ellipse(HX, HY + 6, 104, 124, fill=wood, w=7)
+        for j in range(5):
+            c.arc(HX + 30, HY + 10, 40 + j * 12, 70 + j * 10, 300, 360, fill=darker(wood, 0.8), w=3)
+        c.shade(lambda l: (l.ellipse(HX, HY + 6, 100, 120, fill=(0, 0, 0), w=0),
+                           l.ellipse(HX - 24, HY - 20, 104, 124, fill=(0, 0, 0, 0), w=0)), 0.3)
         for j in range(3):
             c.line([(HX - 70, HY - 60 + j * 22), (HX - 40, HY - 60 + j * 22)], fill=(245, 240, 230), w=7)
             c.line([(HX + 70, HY - 60 + j * 22), (HX + 40, HY - 60 + j * 22)], fill=(245, 240, 230), w=7)
@@ -496,25 +571,29 @@ def sprite(spec, expr="neutro", blink=False, talk=False, pose="parado", scale=1.
             c.poly([(x - 6, my - (18 if talk else 10)), (x + 6, my - (18 if talk else 10)), (x, my)], fill=(250, 250, 240), w=0)
         if "cabelo_mascara" in s["acessorios"]:
             pass
-        _spiky(c, s["cor_cabelo"], n=5, tip=1.25, fringe=False, start=200, end=340) if s["cabelo"] != "careca" else None
+        if s["cabelo"] != "careca":
+            _hair_detail(c, _spiky(c, s["cor_cabelo"], n=5, tip=1.25, fringe=False, start=200, end=340), s["cor_cabelo"])
         _acc_head(c, s)
         return c.final(scale)
 
-    c.circle(HX, HY, HR, fill=skin)
+    _head(c, skin)
     hair = s["cabelo"]
     hc = s["cor_cabelo"]
+    pts = None
     if hair == "espetado":
-        _spiky(c, hc)
+        pts = _spiky(c, hc)
     elif hair == "ninja":
-        _spiky(c, hc, n=9, tip=1.55, start=180, end=360)
-    elif hair == "curto":
-        _cap_hair(c, hc)
+        pts = _spiky(c, hc, n=9, tip=1.55, start=180, end=360)
+    elif hair in ("curto", "longo"):
+        pts = _cap_hair(c, hc)
     elif hair == "cacheado":
         _curly(c, hc)
-    elif hair == "longo":
-        _cap_hair(c, hc)
+        c.shade(lambda l: [l.circle(HX - 40 + i * 30, HY - 95 + (i % 2) * 10, 8, fill=lighter(hc, 0.5), w=0)
+                           for i in range(4)], 0.6)
     elif hair == "careca":
-        c.arc(HX - 40, HY - 70, 26, 14, 200, 290, fill=(255, 255, 255), w=6)
+        c.shade(lambda l: l.arc(HX - 40, HY - 70, 26, 14, 200, 290, fill=(255, 255, 255), w=7), 0.7)
+    if pts:
+        _hair_detail(c, pts, hc)
     _face_extras_before = expr
     _eyes(c, expr, blink, look)
     _mouth(c, expr, talk)
