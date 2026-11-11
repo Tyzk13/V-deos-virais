@@ -1,0 +1,72 @@
+# Vídeos virais "E se…"
+
+Gerador de vídeos curtos (9:16, 1080x1920, 30 fps) no estilo das animações narradas "E se você…":
+personagens 2D de cabeça redonda, narração em português, legenda palavra por palavra com palavras-chave em
+amarelo, cortes rápidos com zoom, trilha sonora e efeitos.
+
+Tudo é gerado por código: desenhos, voz, música e efeitos. Não usa banco de imagens nem API paga.
+
+## Vídeos prontos (`videos/`)
+
+| Arquivo | Ideia | Duração |
+|---|---|---|
+| `naruto_presidente.mp4` | E se o Naruto fosse presidente do Brasil? | ~2 min |
+| `ilha_canibais.mp4` | E se você fosse parar numa ilha de c*nib*is? (palavra sempre censurada: bip no áudio + tarja na tela) | ~2 min |
+| `ia_dominou.mp4` | E se a IA dominasse o mundo? (final "biscoito ou bolacha") | ~2 min |
+
+Cada vídeo vem com:
+- `*_capa.jpg`: imagem de capa
+- `*.srt`: legenda separada (útil para editar no CapCut)
+- `*_legenda_post.txt`: sugestão de texto e hashtags para a postagem
+
+## Por que esse formato (o que está em alta)
+
+- **Gancho nos primeiros 2 segundos:** a pergunta "E se…" já abre com flash, zoom e efeito "boom".
+- **Mais de 1 minuto:** o TikTok tem priorizado e monetizado vídeos com mais de 1 min (Programa de Recompensas).
+- **Legenda palavra por palavra no meio da tela:** prende quem assiste sem som.
+- **Reviravolta no final + pergunta para comentar:** aumenta comentários e replays.
+  Exemplos: "Tempero." / "É bolacha." / "Você votaria no Naruto?"
+
+## Como gerar de novo / criar novos
+
+```bash
+pip install piper-tts numpy pillow
+# voz pt-BR (offline):
+mkdir -p vozes && cd vozes
+curl -LO https://github.com/rhasspy/piper/releases/download/v0.0.2/voice-pt-br-edresson-low.tar.gz
+tar xzf voice-pt-br-edresson-low.tar.gz && cd ..
+
+python3 gerar.py                         # gera os 3 vídeos
+python3 gerar.py ia_dominou              # só um
+python3 gerar.py --previa ilha_canibais  # folha de contato rápida para revisar o enquadramento
+```
+
+Precisa de `ffmpeg` instalado.
+
+Para um vídeo novo, copie um arquivo de `roteiros/` e edite a lista `CENAS`. Cada `Cena` define:
+- `fala`: texto da narração/legenda. Use `[[palavra]]` para censurar (vira BIP + tarja preta).
+- `voz=`: opcional, texto falado quando for diferente do escrito (ex.: "99%" → "noventa e nove por cento").
+- `fundo`: cenário (veja `gerador/cenarios.py`).
+- elenco: `A(personagem, x, y, escala, expressão, pose, fala=True)` e objetos `Pr("celular", …)`.
+- `cam=close(...)` / `plano(...)`: movimento de câmera; `fx=["soco", "flash", "tremor", "glitch", ...]`.
+- `sfx=["boom", ("whoosh", 1.2)]`: efeitos sonoros (com atraso opcional em segundos).
+- `destaque=[...]`: palavras que aparecem em amarelo na legenda.
+
+### Dica para ficar ainda melhor
+A voz offline (Piper) é robótica. Para mais naturalidade, importe o vídeo no CapCut, use o `.srt` como roteiro e
+troque a narração por uma voz de IA do próprio CapCut ou pela sua voz. As animações já estão sincronizadas por cena.
+
+## Estrutura
+
+```
+gerar.py               # CLI
+gerador/
+  canvas.py            # desenho com antialiasing
+  personagens.py       # personagens, expressões e poses
+  cenarios.py          # fundos
+  props.py             # objetos (celular, TV, caldeirão, portal…)
+  audio.py             # voz (Piper), bip de censura, trilha e efeitos
+  render.py            # câmera, animação, legendas, renderização paralela e mixagem
+roteiros/              # um arquivo por vídeo
+videos/                # saída
+```
