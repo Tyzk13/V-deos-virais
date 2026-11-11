@@ -16,11 +16,11 @@ Tudo é gerado por código: desenhos, voz, música e efeitos. Não usa banco de 
 
 Os vídeos saem **sem narração** (só trilha + efeitos), prontos para receber as vozes gravadas.
 O ritmo das cenas, as legendas e o movimento da boca seguem uma voz-guia interna, e o `*_roteiro.txt` traz
-o texto de cada cena com o tempo exato em que ela deve ser falada.
+o texto do roteiro, uma fala por linha.
 Nas falas com `[BIP: ...]`, coloque o bip por cima da palavra.
 
 Cada vídeo vem com:
-- `*_roteiro.txt`: transcrição do roteiro com os tempos de cada fala
+- `*_roteiro.txt`: transcrição do roteiro (só o texto)
 - `*_capa.jpg`: imagem de capa
 - `*.srt`: legenda separada (útil para editar no CapCut)
 - `*_legenda_post.txt`: sugestão de texto e hashtags para a postagem
@@ -60,7 +60,7 @@ Para um vídeo novo, copie um arquivo de `roteiros/` e edite a lista `CENAS`. Ca
 - `destaque=[...]`: palavras que aparecem em amarelo na legenda.
 
 ### Colocando as vozes
-Importe o vídeo no CapCut (ou outro editor) e grave/importe cada fala no tempo indicado no `*_roteiro.txt`.
+Importe o vídeo no CapCut (ou outro editor) e grave/importe as falas do `*_roteiro.txt` acompanhando as legendas do vídeo.
 Se preferir, mande os áudios e o gerador pode ser ajustado para usar as vozes direto e recalcular os tempos.
 
 ## Estrutura

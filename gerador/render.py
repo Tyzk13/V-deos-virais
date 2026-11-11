@@ -451,7 +451,7 @@ def transcricao(cenas, starts, durs):
     linhas = []
     for i, (c, a, d) in enumerate(zip(cenas, starts, durs), 1):
         txt = re.sub(r"\[\[(.*?)\]\]", r"[BIP: \1]", c["fala"])
-        linhas.append(f"{i:02d}. [{_mmss(a)} - {_mmss(a + d)}] {txt}")
+        linhas.append(txt)
     return "\n".join(linhas)
 
 

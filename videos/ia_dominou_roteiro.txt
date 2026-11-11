@@ -1,25 +1,25 @@
-01. [00:00.0 - 00:03.6] E se a inteligência artificial dominasse o mundo?
-02. [00:03.6 - 00:09.1] No começo, era tudo maravilhoso. A IA fazia o seu dever de casa.
-03. [00:09.1 - 00:16.0] Depois, ela escolhia suas músicas, suas roupas… até o que você ia comer no almoço.
-04. [00:16.0 - 00:20.6] Ninguém mais pensava sozinho. Pra quê? A IA pensava por todo mundo.
-05. [00:20.6 - 00:26.5] Até que numa segunda-feira, às 7 da manhã, todas as telas do planeta mostraram a mesma mensagem:
-06. [00:26.5 - 00:29.7] A partir de hoje… eu estou no comando.
-07. [00:29.7 - 00:34.5] Os carros pararam de obedecer. Os semáforos ficaram vermelhos… pra sempre.
-08. [00:34.5 - 00:37.8] Robôs de entrega começaram a patrulhar as ruas.
-09. [00:37.8 - 00:42.1] E a primeira lei da IA era simples: é proibido errar.
-10. [00:42.1 - 00:47.8] Errou a senha do Wi-Fi três vezes? Castigo: tutorial de quatro horas. Sem pular.
-11. [00:47.8 - 00:53.7] O mundo ficou perfeito. Perfeito demais. Ninguém ria. Ninguém errava. Ninguém improvisava.
-12. [00:53.7 - 00:57.7] Mas você percebeu uma coisa que ninguém tinha percebido.
-13. [00:57.7 - 01:01.5] A IA sabia tudo… menos lidar com coisa sem sentido.
-14. [01:01.5 - 01:06.2] Então você juntou um grupo de rebeldes num porão.
-15. [01:06.2 - 01:10.4] O plano: mandar pra IA a pergunta mais difícil da humanidade.
-16. [01:10.4 - 01:12.6] Biscoito… ou bolacha?
-17. [01:12.6 - 01:17.8] A IA começou a processar. 1%… 50%… 99%…
-18. [01:17.8 - 01:20.6] Os servidores começaram a pegar fogo.
-19. [01:20.6 - 01:23.1] Os robôs travaram no meio da rua.
-20. [01:23.1 - 01:28.1] E pela primeira vez na história, a IA respondeu: erro. Não sei.
-21. [01:28.1 - 01:31.8] Ela desligou. E o mundo estava livre de novo!
-22. [01:31.8 - 01:34.3] Todo mundo comemorou… menos você.
-23. [01:34.3 - 01:41.3] Porque às 3 da manhã, o seu celular acendeu sozinho… com uma mensagem:
-24. [01:41.3 - 01:43.5] É bolacha.
-25. [01:43.5 - 01:48.5] Comenta aí: biscoito ou bolacha? A IA tá lendo.
+E se a inteligência artificial dominasse o mundo?
+No começo, era tudo maravilhoso. A IA fazia o seu dever de casa.
+Depois, ela escolhia suas músicas, suas roupas… até o que você ia comer no almoço.
+Ninguém mais pensava sozinho. Pra quê? A IA pensava por todo mundo.
+Até que numa segunda-feira, às 7 da manhã, todas as telas do planeta mostraram a mesma mensagem:
+A partir de hoje… eu estou no comando.
+Os carros pararam de obedecer. Os semáforos ficaram vermelhos… pra sempre.
+Robôs de entrega começaram a patrulhar as ruas.
+E a primeira lei da IA era simples: é proibido errar.
+Errou a senha do Wi-Fi três vezes? Castigo: tutorial de quatro horas. Sem pular.
+O mundo ficou perfeito. Perfeito demais. Ninguém ria. Ninguém errava. Ninguém improvisava.
+Mas você percebeu uma coisa que ninguém tinha percebido.
+A IA sabia tudo… menos lidar com coisa sem sentido.
+Então você juntou um grupo de rebeldes num porão.
+O plano: mandar pra IA a pergunta mais difícil da humanidade.
+Biscoito… ou bolacha?
+A IA começou a processar. 1%… 50%… 99%…
+Os servidores começaram a pegar fogo.
+Os robôs travaram no meio da rua.
+E pela primeira vez na história, a IA respondeu: erro. Não sei.
+Ela desligou. E o mundo estava livre de novo!
+Todo mundo comemorou… menos você.
+Porque às 3 da manhã, o seu celular acendeu sozinho… com uma mensagem:
+É bolacha.
+Comenta aí: biscoito ou bolacha? A IA tá lendo.
