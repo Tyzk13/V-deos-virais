@@ -91,7 +91,7 @@ CENAS = [
 
     Cena("A IA começou a processar. 1%… 50%… 99%…", "servidores",
          [Pr("loading", 540, 1150, 1.1, animado=True, de=1, ate=99, dur=4.5)],
-         voz="A I.A. começou a processar. Um por cento… cinquenta… noventa e nove…",
+         voz="A IA começou a processar. Um por cento… cinquenta… noventa e nove…",
          cam=plano(1.0, 1.15), fx=["glitch"], sfx=["suspense", ("glitch", 3.0)], destaque=["processar", "99%"]),
 
     Cena("Os servidores começaram a pegar fogo.", "servidores",

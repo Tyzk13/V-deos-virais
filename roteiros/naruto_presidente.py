@@ -57,7 +57,7 @@ CENAS = [
     Cena("5.570 clones. Um em cada cidade.", "raios_verde",
          [Pr("texto", 540, 900, 1.0, txt="5.570", tam=260, anim="pulsar")] +
          [A(N, 90 + i * 150, 1880, 0.5, "sorriso", "acenando", anim="pulo") for i in range(7)],
-         voz="Cinco mil, quinhentos e setenta clones. Um em cada cidade.",
+         voz="Cinco mil quinhentos e setenta clones. Um em cada cidade.",
          sfx=["pop"], destaque=["5.570", "clones"]),
 
     Cena("Resultado: 99% dos votos.", "tv",

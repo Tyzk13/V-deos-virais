@@ -310,71 +310,99 @@ def _worker(args):
     return path
 
 
+def _palavras_no_grupo(tokens, sub_trechos, bips_grupo, bips_novos):
+    """Tempos das palavras de um grupo (frases) dentro dos seus trechos de fala.
+
+    Se a gravação já tem bip(s) no lugar das palavras censuradas, a tarja acompanha o bip.
+    Senão, as censuradas ganham bip novo (anotado em bips_novos)."""
+    from . import alinhamento as al
+    n_cens = sum(1 for _, cz in tokens if cz)
+    out = []
+    if n_cens and len(bips_grupo) == n_cens:
+        limites = [sub_trechos[0][0]] + [v for bp in bips_grupo for v in bp] + [sub_trechos[-1][1]]
+        partes, atual = [], []
+        for w, cz in tokens:
+            if cz:
+                partes.append(atual)
+                atual = []
+            else:
+                atual.append(w)
+        partes.append(atual)
+        for g, ws in enumerate(partes):
+            t0, t1 = limites[2 * g], limites[2 * g + 1]
+            sub = [(max(a, t0), min(b, t1)) for a, b in sub_trechos if min(b, t1) - max(a, t0) > 0.05]
+            if ws:
+                sub = sub or [(t0, max(t1, t0 + 0.3))]
+                out += [(w, a, b, False) for w, a, b in al.palavras_nos_trechos(ws, sub)]
+            if g < len(bips_grupo):
+                out.append(("████", bips_grupo[g][0], bips_grupo[g][1], True))
+        return out
+    tempos = al.palavras_nos_trechos([w for w, _ in tokens], sub_trechos)
+    for (w, cz), (_, a, b) in zip(tokens, tempos):
+        if cz:
+            bips_novos.append((a, b))
+            out.append(("████", a, b, True))
+        else:
+            out.append((w, a, b, False))
+    return out
+
+
 def _tempos_da_gravacao(cenas, arquivo, velocidade):
-    """Usa uma narração gravada: acha onde cada cena é falada e devolve tempos, legendas e a voz (com bips)."""
+    """Usa uma narração gravada: acha onde cada frase é falada e devolve tempos, legendas e a voz (com bips)."""
     from . import alinhamento as al
     x = al.carregar(arquivo)
     trechos = al.trechos_de_fala(x)
-    guia = [len(au.narrar(c["fala"], c["voz"], velocidade)[0]) / au.SR for c in cenas]
-    grupos = al.alinhar(trechos, guia)
     bips_gravados = al.detectar_bips(x)
     if bips_gravados:
         print(f"      a gravação já tem {len(bips_gravados)} bip(s); a tarja vai acompanhar cada um")
-    starts, legendas, bips = [], [], []
-    fim_ant = 0.0
-    for k, (c, (i, j)) in enumerate(zip(cenas, grupos)):
-        ini_fala = trechos[i][0]
-        st = 0.0 if k == 0 else max(fim_ant, ini_fala - 0.15)
+    # frases do roteiro (legenda) e frases faladas pela voz-guia (texto de "voz" quando houver)
+    fr_cena, cena_da_frase, dur, segs, seg_da_frase = [], [], [], [], []
+    for k, c in enumerate(cenas):
+        fs = al.frases(c["fala"])
+        fr_cena.append(fs)
+        fv = al.frases(c["voz"]) if c["voz"] else fs
+        textos_v = [" ".join(w for w, _ in f) for f in fv]
+        audios = [au.trim(au.tts(t, velocidade, deterministico=True)) for t in textos_v]
+        if len(fv) == len(fs):
+            dur += [len(a) / au.SR for a in audios]
+            seg_da_frase += [len(segs) + i for i in range(len(fs))]
+        else:   # texto falado diferente: só o início da cena tem previsão; duração repartida pelo tamanho
+            tot = sum(len(a) for a in audios) / au.SR
+            chars = [sum(len(w) + 1 for w, _ in f) for f in fs]
+            dur += [tot * ch / sum(chars) for ch in chars]
+            seg_da_frase += [len(segs)] + [None] * (len(fs) - 1)
+        segs += audios
+        cena_da_frase += [k] * len(fs)
+    prev_seg = al.prever_inicios(x, segs, au.SR)
+    previsto = [prev_seg[i] if (prev_seg and i is not None) else None for i in seg_da_frase] if prev_seg else None
+    if previsto is None:
+        print("      (librosa não instalado: alinhando só pelas pausas)")
+    grupos = al.alinhar_frases(trechos, cena_da_frase, dur, previsto=previsto)
+    frases_flat = [f for fs in fr_cena for f in fs]
+    inicio_cena, fim_cena = {}, {}
+    palavras_cena = {k: [] for k in range(len(cenas))}
+    bips_novos = []
+    for t0, t1, f0, f1 in grupos:
+        k = cena_da_frase[f0]
+        sub = trechos[t0:t1]
+        inicio_cena.setdefault(k, sub[0][0])
+        fim_cena[k] = sub[-1][1]
+        tokens = [t for f in frases_flat[f0:f1] for t in f]
+        bg = [bp for bp in bips_gravados if sub[0][0] - 0.05 <= bp[0] <= sub[-1][1] + 0.05]
+        palavras_cena[k] += _palavras_no_grupo(tokens, sub, bg, bips_novos)
+    starts, legendas = [], []
+    for k, c in enumerate(cenas):
+        st = 0.0 if k == 0 else max(fim_cena[k - 1], inicio_cena[k] - 0.15)
         starts.append(round(st * FPS) / FPS)
-        fim_ant = trechos[j - 1][1]
-        # palavras (censuradas viram tarja + bip na voz)
-        tokens = []
-        for parte in re.split(r"(\[\[.*?\]\])", c["fala"]):
-            if parte.startswith("[["):
-                tokens.append((parte[2:-2], True))
-            else:
-                tokens += [(w, False) for w in parte.split() if any(ch.isalnum() for ch in w)]
-        span = (trechos[i][0] - 0.1, trechos[j - 1][1] + 0.1)
-        bips_cena = [bp for bp in bips_gravados if span[0] <= bp[0] <= span[1]]
-        n_cens = sum(1 for _, cz in tokens if cz)
-        palavras = []
-        if n_cens and len(bips_cena) == n_cens:
-            # o bip já está na gravação: tarja no lugar do bip, demais palavras antes/depois dele
-            limites = [trechos[i][0]] + [v for bp in bips_cena for v in bp] + [trechos[j - 1][1]]
-            grupos_pal, atual = [], []
-            for w, cz in tokens:
-                if cz:
-                    grupos_pal.append(atual)
-                    atual = []
-                else:
-                    atual.append(w)
-            grupos_pal.append(atual)
-            for g, ws in enumerate(grupos_pal):
-                t0, t1 = limites[2 * g], limites[2 * g + 1]
-                sub = [(max(a, t0), min(b, t1)) for a, b in trechos[i:j] if min(b, t1) - max(a, t0) > 0.05]
-                if ws:
-                    sub = sub or [(t0, max(t1, t0 + 0.3))]
-                    palavras += [(w, a, b, False) for w, a, b in al.palavras_nos_trechos(ws, sub)]
-                if g < len(bips_cena):
-                    a, b = bips_cena[g]
-                    palavras.append(("████", a, b, True))
-        else:
-            tempos = al.palavras_nos_trechos([w for w, _ in tokens], trechos[i:j])
-            for (w, cens), (_, a, b) in zip(tokens, tempos):
-                if cens:
-                    bips.append((a, b))
-                    palavras.append(("█" * max(4, len(w)), a, b, True))
-                else:
-                    palavras.append((w, a, b, False))
-        legendas += blocos_legenda(palavras, c["destaque"], 0.0)
+        legendas += blocos_legenda(palavras_cena[k], c["destaque"], 0.0)
     total = round((len(x) / au.SR + 1.2) * FPS) / FPS
     durs = [b - a for a, b in zip(starts, starts[1:] + [total])]
     voz = np.zeros(int(total * au.SR), np.float32)
     voz[: len(x)] = x[: len(voz)]
-    for a, b in bips:
+    for a, b in bips_novos:
         a0, b0 = int((a - 0.04) * au.SR), int((b + 0.04) * au.SR)
         voz[a0:b0] = au.bip((b0 - a0) / au.SR)[: b0 - a0] * 0.8
-    print(f"      narração gravada: {len(trechos)} trechos de fala alinhados em {len(cenas)} cenas")
+    print(f"      narração gravada: {len(trechos)} trechos de fala alinhados com {len(dur)} frases em {len(cenas)} cenas")
     return starts, durs, legendas, voz
 
 

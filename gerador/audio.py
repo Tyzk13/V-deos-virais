@@ -36,11 +36,14 @@ def _limpa_tts(txt):
     return re.sub(r"\s+", " ", txt).strip()
 
 
-def tts(texto, velocidade=0.9):
-    """Sintetiza texto -> array float32 em 44.1 kHz."""
+def tts(texto, velocidade=0.9, deterministico=False):
+    """Sintetiza texto -> array float32 em 44.1 kHz. deterministico=True: mesma duração sempre (guia)."""
     from piper import SynthesisConfig
     v = _get_voice()
-    cfg = SynthesisConfig(length_scale=velocidade, noise_scale=0.6, noise_w_scale=0.7)
+    if deterministico:
+        cfg = SynthesisConfig(length_scale=velocidade, noise_scale=0.0, noise_w_scale=0.0)
+    else:
+        cfg = SynthesisConfig(length_scale=velocidade, noise_scale=0.6, noise_w_scale=0.7)
     chunks = [c.audio_float_array for c in v.synthesize(_limpa_tts(texto), syn_config=cfg)]
     if not chunks:
         return np.zeros(int(0.2 * SR), np.float32)
@@ -254,3 +257,14 @@ def salvar_wav(path, x, sr=SR):
         w.setsampwidth(2)
         w.setframerate(sr)
         w.writeframes((x * 32767).astype(np.int16).tobytes())
+
+
+_dur_cache = {}
+
+
+def duracao_guia(texto, velocidade=0.9):
+    """Duração (s) da fala do texto pela voz-guia, sem pausas nas pontas. Sempre igual para o mesmo texto."""
+    chave = (texto, velocidade)
+    if chave not in _dur_cache:
+        _dur_cache[chave] = len(trim(tts(texto, velocidade, deterministico=True))) / SR
+    return _dur_cache[chave]

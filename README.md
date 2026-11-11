@@ -36,7 +36,7 @@ Cada vídeo vem com:
 ## Como gerar de novo / criar novos
 
 ```bash
-pip install piper-tts numpy pillow
+pip install piper-tts numpy pillow librosa
 # voz pt-BR (offline):
 mkdir -p vozes && cd vozes
 curl -LO https://github.com/rhasspy/piper/releases/download/v0.0.2/voice-pt-br-edresson-low.tar.gz
@@ -61,11 +61,13 @@ Para um vídeo novo, copie um arquivo de `roteiros/` e edite a lista `CENAS`. Ca
 
 ### Colocando as vozes (narração gravada / ElevenLabs)
 Salve o áudio em `narracoes/<nome_do_roteiro>.mp3` (ex.: `narracoes/ilha_canibais.mp3`) e rode `python3 gerar.py <nome>`.
-O gerador encontra sozinho onde cada frase é falada (pelas pausas entre as frases) e ajusta:
+O gerador encontra sozinho onde cada frase é falada e ajusta. Para isso, compara o som da gravação com a voz-guia
+(alinhamento acústico com `librosa`) e corta nas pausas entre as frases. Depois ajusta:
 - o tempo de cada cena para começar junto com a fala dela;
 - as legendas, frase por frase;
 - a boca dos personagens, que mexe com o volume da voz;
-- o bip: palavras marcadas com `[[ ]]` no roteiro são substituídas por bip no áudio e tarja na tela.
+- o bip: palavras marcadas com `[[ ]]` no roteiro aparecem com tarja na tela. Se a gravação já tiver o bip (tom de
+  1000 Hz), a tarja acompanha esse bip. Se a palavra foi falada, ela é trocada por bip automaticamente.
 
 Dica: grave o roteiro exatamente como está no `*_roteiro.txt`, com uma pequena pausa entre as frases.
 
