@@ -123,7 +123,7 @@ CENAS = [
          cam=plano(1.0, 1.15, y=1050), fx=["escuro"], sfx=["suspense"], destaque=["celular", "sozinho"]),
 
     Cena("É bolacha.", "escuro",
-         [Pr("celular", 540, 1500, 1.5, texto="É\nBOLACHA.", tam=62, cor=(25, 0, 5), cor_texto=(255, 60, 70))],
+         [Pr("celular", 540, 1500, 1.5, texto="É\nBOLACHA.", tam=48, cor=(25, 0, 5), cor_texto=(255, 60, 70))],
          cam=plano(1.0, 1.25), fx=["glitch", "vermelho", "soco", "tremor"], sfx=["boom", "glitch"],
          destaque=["bolacha"], min_dur=2.2),
 
