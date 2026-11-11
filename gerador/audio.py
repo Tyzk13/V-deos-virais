@@ -88,7 +88,7 @@ def narrar(fala, voz=None, velocidade=0.9):
             palavras.append(("█" * max(4, len(pl[2:-2])), t, t + len(seg) / SR, True))
         else:
             seg = trim(tts(p, velocidade))
-            ws = pl.split()
+            ws = [w for w in pl.split() if any(ch.isalnum() for ch in w)]
             if ws:
                 pesos = [len(w) + 2 + (4 if w[-1] in ".,!?:;…" else 0) for w in ws]
                 tot = sum(pesos)

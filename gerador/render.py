@@ -317,6 +317,9 @@ def _tempos_da_gravacao(cenas, arquivo, velocidade):
     trechos = al.trechos_de_fala(x)
     guia = [len(au.narrar(c["fala"], c["voz"], velocidade)[0]) / au.SR for c in cenas]
     grupos = al.alinhar(trechos, guia)
+    bips_gravados = al.detectar_bips(x)
+    if bips_gravados:
+        print(f"      a gravação já tem {len(bips_gravados)} bip(s); a tarja vai acompanhar cada um")
     starts, legendas, bips = [], [], []
     fim_ant = 0.0
     for k, (c, (i, j)) in enumerate(zip(cenas, grupos)):
@@ -330,15 +333,39 @@ def _tempos_da_gravacao(cenas, arquivo, velocidade):
             if parte.startswith("[["):
                 tokens.append((parte[2:-2], True))
             else:
-                tokens += [(w, False) for w in parte.split()]
-        tempos = al.palavras_nos_trechos([w for w, _ in tokens], trechos[i:j])
+                tokens += [(w, False) for w in parte.split() if any(ch.isalnum() for ch in w)]
+        span = (trechos[i][0] - 0.1, trechos[j - 1][1] + 0.1)
+        bips_cena = [bp for bp in bips_gravados if span[0] <= bp[0] <= span[1]]
+        n_cens = sum(1 for _, cz in tokens if cz)
         palavras = []
-        for (w, cens), (_, a, b) in zip(tokens, tempos):
-            if cens:
-                bips.append((a, b))
-                palavras.append(("█" * max(4, len(w)), a, b, True))
-            else:
-                palavras.append((w, a, b, False))
+        if n_cens and len(bips_cena) == n_cens:
+            # o bip já está na gravação: tarja no lugar do bip, demais palavras antes/depois dele
+            limites = [trechos[i][0]] + [v for bp in bips_cena for v in bp] + [trechos[j - 1][1]]
+            grupos_pal, atual = [], []
+            for w, cz in tokens:
+                if cz:
+                    grupos_pal.append(atual)
+                    atual = []
+                else:
+                    atual.append(w)
+            grupos_pal.append(atual)
+            for g, ws in enumerate(grupos_pal):
+                t0, t1 = limites[2 * g], limites[2 * g + 1]
+                sub = [(max(a, t0), min(b, t1)) for a, b in trechos[i:j] if min(b, t1) - max(a, t0) > 0.05]
+                if ws:
+                    sub = sub or [(t0, max(t1, t0 + 0.3))]
+                    palavras += [(w, a, b, False) for w, a, b in al.palavras_nos_trechos(ws, sub)]
+                if g < len(bips_cena):
+                    a, b = bips_cena[g]
+                    palavras.append(("████", a, b, True))
+        else:
+            tempos = al.palavras_nos_trechos([w for w, _ in tokens], trechos[i:j])
+            for (w, cens), (_, a, b) in zip(tokens, tempos):
+                if cens:
+                    bips.append((a, b))
+                    palavras.append(("█" * max(4, len(w)), a, b, True))
+                else:
+                    palavras.append((w, a, b, False))
         legendas += blocos_legenda(palavras, c["destaque"], 0.0)
     total = round((len(x) / au.SR + 1.2) * FPS) / FPS
     durs = [b - a for a, b in zip(starts, starts[1:] + [total])]
@@ -376,6 +403,10 @@ def gerar(cenas, saida, humor="misterio", bpm=96, workers=4, capa_t=0.6, velocid
             T += dur
         voz = np.concatenate(vozes)
     total = len(voz) / au.SR
+    legendas.sort(key=lambda b: b["ini"])
+    for b0, b1 in zip(legendas, legendas[1:]):
+        if 0 < b1["ini"] - b0["fim"] < 0.6:   # não deixa a legenda piscar nas pausas curtas
+            b0["fim"] = b1["ini"]
     print(f"      duração total: {total:.1f}s")
 
     print("[2/4] Trilha e efeitos...")

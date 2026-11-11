@@ -147,3 +147,32 @@ def palavras_nos_trechos(texto_palavras, trechos):
             acc += b - a
         return trechos[-1][1]
     return [(w, real(a), real(b)) for w, a, b in _distribuir(texto_palavras, 0.0, fala)]
+
+
+def detectar_bips(x, freq=1000, min_dur=0.12):
+    """Acha bips (tom puro perto de `freq` Hz) já presentes na gravação. Retorna [(ini, fim)]."""
+    win = int(0.02 * SR)
+    n = len(x) // win
+    f = np.fft.rfftfreq(win * 2, 1 / SR)
+    banda = (f > freq * 0.9) & (f < freq * 1.1)
+    marc = np.zeros(n, bool)
+    rms_max = np.sqrt(np.mean(x ** 2)) * 4 + 1e-9
+    for i in range(n):
+        seg = x[i * win:(i + 1) * win]
+        sp = np.abs(np.fft.rfft(seg * np.hanning(win), win * 2)) ** 2
+        tot = sp.sum() + 1e-12
+        energia = np.sqrt(np.mean(seg ** 2))
+        marc[i] = sp[banda].sum() / tot > 0.6 and energia > rms_max * 0.05
+    out = []
+    i = 0
+    while i < n:
+        if marc[i]:
+            j = i
+            while j < n and (marc[j] or (j + 1 < n and marc[j + 1])):
+                j += 1
+            if (j - i) * 0.02 >= min_dur:
+                out.append((i * 0.02, j * 0.02))
+            i = j
+        else:
+            i += 1
+    return out
