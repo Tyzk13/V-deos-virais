@@ -310,24 +310,71 @@ def _worker(args):
     return path
 
 
-def gerar(cenas, saida, humor="misterio", bpm=96, workers=4, capa_t=0.6, velocidade=0.9, narracao=False):
+def _tempos_da_gravacao(cenas, arquivo, velocidade):
+    """Usa uma narração gravada: acha onde cada cena é falada e devolve tempos, legendas e a voz (com bips)."""
+    from . import alinhamento as al
+    x = al.carregar(arquivo)
+    trechos = al.trechos_de_fala(x)
+    guia = [len(au.narrar(c["fala"], c["voz"], velocidade)[0]) / au.SR for c in cenas]
+    grupos = al.alinhar(trechos, guia)
+    starts, legendas, bips = [], [], []
+    fim_ant = 0.0
+    for k, (c, (i, j)) in enumerate(zip(cenas, grupos)):
+        ini_fala = trechos[i][0]
+        st = 0.0 if k == 0 else max(fim_ant, ini_fala - 0.15)
+        starts.append(round(st * FPS) / FPS)
+        fim_ant = trechos[j - 1][1]
+        # palavras (censuradas viram tarja + bip na voz)
+        tokens = []
+        for parte in re.split(r"(\[\[.*?\]\])", c["fala"]):
+            if parte.startswith("[["):
+                tokens.append((parte[2:-2], True))
+            else:
+                tokens += [(w, False) for w in parte.split()]
+        tempos = al.palavras_nos_trechos([w for w, _ in tokens], trechos[i:j])
+        palavras = []
+        for (w, cens), (_, a, b) in zip(tokens, tempos):
+            if cens:
+                bips.append((a, b))
+                palavras.append(("█" * max(4, len(w)), a, b, True))
+            else:
+                palavras.append((w, a, b, False))
+        legendas += blocos_legenda(palavras, c["destaque"], 0.0)
+    total = round((len(x) / au.SR + 1.2) * FPS) / FPS
+    durs = [b - a for a, b in zip(starts, starts[1:] + [total])]
+    voz = np.zeros(int(total * au.SR), np.float32)
+    voz[: len(x)] = x[: len(voz)]
+    for a, b in bips:
+        a0, b0 = int((a - 0.04) * au.SR), int((b + 0.04) * au.SR)
+        voz[a0:b0] = au.bip((b0 - a0) / au.SR)[: b0 - a0] * 0.8
+    print(f"      narração gravada: {len(trechos)} trechos de fala alinhados em {len(cenas)} cenas")
+    return starts, durs, legendas, voz
+
+
+def gerar(cenas, saida, humor="misterio", bpm=96, workers=4, capa_t=0.6, velocidade=0.9, narracao=False,
+          narracao_arquivo=None):
     """narracao=False: a voz sintética só serve de guia de ritmo (legenda, boca, duração das cenas);
-    o MP4 sai só com trilha + efeitos, pronto para receber as vozes gravadas."""
+    o MP4 sai só com trilha + efeitos, pronto para receber as vozes gravadas.
+    narracao_arquivo: áudio gravado (mp3/wav). As cenas, legendas e bocas passam a seguir essa voz."""
     tmp = tempfile.mkdtemp(prefix="video_")
     print(f"[1/4] Narrando {len(cenas)} cenas...")
-    vozes, starts, durs, legendas = [], [], [], []
-    T = 0.0
-    for c in cenas:
-        x, palavras = au.narrar(c["fala"], c["voz"], velocidade)
-        dur = max(c["min_dur"], len(x) / au.SR + c["extra"])
-        dur = round(dur * FPS) / FPS
-        starts.append(T)
-        durs.append(dur)
-        legendas += blocos_legenda(palavras, c["destaque"], T)
-        pad = np.zeros(int(dur * au.SR) - len(x), np.float32) if int(dur * au.SR) > len(x) else np.zeros(0, np.float32)
-        vozes.append(np.concatenate([x, pad])[: int(dur * au.SR)])
-        T += dur
-    voz = np.concatenate(vozes)
+    if narracao_arquivo:
+        starts, durs, legendas, voz = _tempos_da_gravacao(cenas, narracao_arquivo, velocidade)
+        narracao = True
+    else:
+        vozes, starts, durs, legendas = [], [], [], []
+        T = 0.0
+        for c in cenas:
+            x, palavras = au.narrar(c["fala"], c["voz"], velocidade)
+            dur = max(c["min_dur"], len(x) / au.SR + c["extra"])
+            dur = round(dur * FPS) / FPS
+            starts.append(T)
+            durs.append(dur)
+            legendas += blocos_legenda(palavras, c["destaque"], T)
+            pad = np.zeros(int(dur * au.SR) - len(x), np.float32) if int(dur * au.SR) > len(x) else np.zeros(0, np.float32)
+            vozes.append(np.concatenate([x, pad])[: int(dur * au.SR)])
+            T += dur
+        voz = np.concatenate(vozes)
     total = len(voz) / au.SR
     print(f"      duração total: {total:.1f}s")
 
@@ -381,7 +428,7 @@ def gerar(cenas, saida, humor="misterio", bpm=96, workers=4, capa_t=0.6, velocid
                   "[m][s]amix=inputs=2:normalize=0,loudnorm=I=-18:TP=-2:LRA=11,aformat=channel_layouts=stereo[a]")
     else:
         filtro = (
-        "[1:a]highpass=f=90,equalizer=f=2800:t=q:w=1.2:g=4,equalizer=f=200:t=q:w=1:g=2,"
+        "[1:a]highpass=f=70,equalizer=f=3000:t=q:w=1.2:g=2,"
         "acompressor=threshold=-20dB:ratio=3:attack=5:release=80:makeup=2,asplit=2[v][vk];"
         "[2:a]volume=0.55[m];[m][vk]sidechaincompress=threshold=0.04:ratio=8:attack=15:release=350[md];"
         "[3:a]volume=0.9[s];"

@@ -10,7 +10,7 @@ Tudo é gerado por código: desenhos, voz, música e efeitos. Não usa banco de 
 
 | Arquivo | Ideia | Duração |
 |---|---|---|
-| `naruto_presidente.mp4` | E se o Naruto fosse presidente do Brasil? | ~2 min |
+| `naruto_presidente.mp4` | E se o Naruto fosse presidente do Brasil? **(com narração)** | ~2 min |
 | `ilha_canibais.mp4` | E se você fosse parar numa ilha de c*nib*is? (palavra sempre censurada: tarja preta na tela e marcação [BIP] no roteiro) | ~2 min |
 | `ia_dominou.mp4` | E se a IA dominasse o mundo? (final "biscoito ou bolacha") | ~2 min |
 
@@ -59,9 +59,15 @@ Para um vídeo novo, copie um arquivo de `roteiros/` e edite a lista `CENAS`. Ca
 - `sfx=["boom", ("whoosh", 1.2)]`: efeitos sonoros (com atraso opcional em segundos).
 - `destaque=[...]`: palavras que aparecem em amarelo na legenda.
 
-### Colocando as vozes
-Importe o vídeo no CapCut (ou outro editor) e grave/importe as falas do `*_roteiro.txt` acompanhando as legendas do vídeo.
-Se preferir, mande os áudios e o gerador pode ser ajustado para usar as vozes direto e recalcular os tempos.
+### Colocando as vozes (narração gravada / ElevenLabs)
+Salve o áudio em `narracoes/<nome_do_roteiro>.mp3` (ex.: `narracoes/ilha_canibais.mp3`) e rode `python3 gerar.py <nome>`.
+O gerador encontra sozinho onde cada frase é falada (pelas pausas entre as frases) e ajusta:
+- o tempo de cada cena para começar junto com a fala dela;
+- as legendas, frase por frase;
+- a boca dos personagens, que mexe com o volume da voz;
+- o bip: palavras marcadas com `[[ ]]` no roteiro são substituídas por bip no áudio e tarja na tela.
+
+Dica: grave o roteiro exatamente como está no `*_roteiro.txt`, com uma pequena pausa entre as frases.
 
 ## Estrutura
 
@@ -73,7 +79,9 @@ gerador/
   cenarios.py          # fundos
   props.py             # objetos (celular, TV, caldeirão, portal…)
   audio.py             # voz (Piper), bip de censura, trilha e efeitos
+  alinhamento.py       # sincroniza a narração gravada com as cenas
   render.py            # câmera, animação, legendas, renderização paralela e mixagem
 roteiros/              # um arquivo por vídeo
+narracoes/             # narrações gravadas (usadas automaticamente)
 videos/                # saída
 ```
